@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker_offline/components/habit_tile.dart';
 import 'package:habit_tracker_offline/components/my_drawer.dart';
+import 'package:habit_tracker_offline/components/my_heat_map.dart';
 import 'package:habit_tracker_offline/database/habit_database.dart';
 import 'package:habit_tracker_offline/models/habit.dart';
 import 'package:habit_tracker_offline/util/habit_util.dart';
@@ -144,7 +145,14 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       drawer: MyDrawer(),
-      body: _buildHabitList(),
+      body: ListView(
+        children: [
+          //HEAT MAP
+          _buildHeatMap(),
+          // LIST HABITS
+          _buildHabitList(),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         elevation: 0,
         onPressed: () => createNewHabit(),
@@ -167,6 +175,8 @@ class _HomePageState extends State<HomePage> {
     // return list habits of UI
     return ListView.builder(
       itemCount: habits.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
         // get each individual habit
         final item = habits[index];
@@ -184,6 +194,30 @@ class _HomePageState extends State<HomePage> {
           onPressedEdit: (context) => editHabitBox(item),
           onPressedDelete: (context) => deleteHabitBox(item),
         );
+      },
+    );
+  }
+
+  Widget _buildHeatMap() {
+    //habit database
+    final database = context.read<HabitDatabase>();
+
+    // current habits
+    List<Habit> habits = database.currentHabits;
+
+    //return heatmap ui
+    return FutureBuilder<DateTime?>(
+      future: database.getFirstLaunchDate(),
+      builder: (context, snapshot) {
+        // one the data is available  -> build heat map
+        if (snapshot.hasData) {
+          return MyHeatMap(
+            startDate: snapshot.data,
+            datasets: prepHeatMapDataset(habits),
+          );
+        } else {
+          return Container();
+        }
       },
     );
   }
